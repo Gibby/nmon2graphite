@@ -1,0 +1,282 @@
+#!/usr/bin/perl
+# Program name: nmon2graphite cgi perl script.
+# Purpose: perl script to feed graphite backend with nmon output.
+# Author: Benoit C chmod666.org.
+# Contact: bleachneeded@gmail.com
+# Disclaimer: this programm is provided "as is". please contact me if you found any bugs.
+# Last update :  Apr 17, 2013
+# Version : 0.1a
+# This work is licensed under the Creative Commons Attribution-ShareAlike 3.0 Unported License.
+# To view a copy of this license, visit http://creativecommons.org/licenses/by-sa/3.0/ or send
+# a letter to Creative Commons, 444 Castro Street, Suite 900, Mountain View, California, 94041, USA.
+
+use strict;
+use warnings;
+use Switch;
+use Time::Local;
+use IO::Socket::INET;
+use Data::Dumper;
+use Getopt::Long;
+
+# sub function to print to log
+sub print_to_log {
+  my $f_log_file = shift;
+  my $f_is_debug = shift;
+  my $f_message  = shift;
+  
+  if ( $f_is_debug ) {
+    print $f_log_file "DEBUG> ".$f_message;
+  }
+  else {
+    print $f_log_file $f_message;
+  }
+}
+
+# sub function to print help
+sub print_help {
+  print STDERR << "EOF";
+usage: $0 [-i graphite_box_ip] [-h] [-p graphite_port] [-g] [-l log_file]
+  -i graphite box ip.
+  -p graphite box port.
+  -g enable or disable ignore sessions (ignoring hdisk).
+  -l log file path.
+EOF
+  exit 1;
+}
+
+my $graphite_box_ip    = '10.10.10.10';
+my $graphite_box_port  = '2003';
+my $graphite_box_proto = 'tcp';
+my $log_file           = '/tmp/nmon2graphite.log';
+my $ignorehdisk        = 0;
+my $help;
+
+print_help if ( ! GetOptions('h' => \$help, 'g' => \$ignorehdisk, 'i=s' => \$graphite_box_ip, 'p=i' => \$graphite_box_port, 'l=s' => \$log_file ) or defined $help );
+
+my $num_cpus    = 0;
+my $host_name   = "";
+my $first_zzzz  = 1;
+my $skip        = 0;
+my $debug       = 0;
+my $timestamp;
+my %hash_of_hashes;
+
+open ( my $fh_handle, '>',  $log_file ) or die "Can't open log file $!\n";
+$| = 1;
+
+my $AAA                 = "AAA";
+my $ZZZZ                = "ZZZZ";
+my %global_informations = qw/progname 0 command 0 version 0 build 0 disk_per_line 0 host 0 user 0 aix 0 tl 0 runame 0 time 0 date 0 interval 0 snaphosts 0 hardware 0 cpus 0 kernel 0 serialnumber 0 lparnumbername 0 MachineType 0 nodename 0 timestampsize 0 note0 0 note1 0 note2 0/;
+
+my $socket = IO::Socket::INET -> new ( PeerAddr => $graphite_box_ip, PeerPort => $graphite_box_port, Proto => $graphite_box_proto ) or die ("Coult not create socket $!");
+
+# nmon2graphite reads standard input
+while ( my $nmon_line = <STDIN> ) {
+  my @nmon_current_line_array = split ",", $nmon_line;
+  
+  # case 1 : AAA line, information line.
+  if ( $nmon_current_line_array[0] eq $AAA ) {
+    # cannot loop on keys 'cuz special case link command.
+    # switch will be deprecated in futur perl version.
+    switch ($nmon_current_line_array[1]) {
+      case /^progname/       { $global_informations{progname}       = $nmon_current_line_array[2]; }
+      case /^command/        { $global_informations{command}        = $nmon_current_line_array[2]." ".$nmon_current_line_array[3]." ".$nmon_current_line_array[4]; }
+      case /^version/        { $global_informations{version}        = $nmon_current_line_array[2]; }
+      case /^build/          { $global_informations{build}          = $nmon_current_line_array[2]; }
+      case /^disk_per_line/  { $global_informations{disk_per_line}  = $nmon_current_line_array[2]; }
+      case /^host/           { $global_informations{host}           = $nmon_current_line_array[2]; }
+      case /^user/           { $global_informations{user}           = $nmon_current_line_array[2]; }
+      case /^AIX/            { $global_informations{aix}            = $nmon_current_line_array[2]; }
+      case /^TL/             { $global_informations{tl}             = $nmon_current_line_array[2]; }
+      case /^runname/        { $global_informations{runame}         = $nmon_current_line_array[2]; }
+      case /^time/           { $global_informations{time}           = $nmon_current_line_array[2]; }
+      case /^date/           { $global_informations{date}           = $nmon_current_line_array[2]; }
+      case /^interval/       { $global_informations{interval}       = $nmon_current_line_array[2]; }
+      case /^snapshots/      { $global_informations{snapshots}      = $nmon_current_line_array[2]; }
+      case /^hardware/       { $global_informations{hardware}       = $nmon_current_line_array[2]; }
+      case /^cpus/           { $global_informations{cpus}           = $nmon_current_line_array[2]." ".$nmon_current_line_array[3]; }
+      case /^kernel/         { $global_informations{kernel}         = $nmon_current_line_array[2]; }
+      case /^SerialNumber/   { $global_informations{serialnumber}   = $nmon_current_line_array[2]; }
+      case /^LPARNumberName/ { $global_informations{lparnumbername} = $nmon_current_line_array[2]." ".$nmon_current_line_array[3]; }
+      case /^MachineType/    { $global_informations{machinetype}    = $nmon_current_line_array[2]." ".$nmon_current_line_array[3]; }
+      case /^NodeName/       { $global_informations{nodename}       = $nmon_current_line_array[2]; }
+      case /^timestampsize/  { $global_informations{timestampsize}  = $nmon_current_line_array[2]; }
+      case /^note0/          { $global_informations{note0}          = $nmon_current_line_array[2]; }
+      case /^note1/          { $global_informations{note1}          = $nmon_current_line_array[2]; }
+      case /^note2/          { $global_informations{note2}          = $nmon_current_line_array[2]; }
+    }
+  }
+
+
+  # case 2 : description line.
+  elsif ( $nmon_current_line_array[0] ne "AAA" and $nmon_current_line_array[0] !~ "^BBB" and $first_zzzz == 1  and $nmon_current_line_array[0] ne "ZZZZ" ) {
+    # it is not a data line but a description line : no timestamp and no number in second field.
+    # ex : BBBP,651,oslevel,"6100-07" ==> do not need. 
+    # ex : DISKRIO,T0002,0.0,0.0,0.0,0.0 ==> do not need.
+    # ex : MEM,Memory blueclient2,Real Free %,Virtual free %,Real free(MB),Virtual free(MB),Real total(MB),Virtual total(MB),Physical(MB) ==> need.
+    if ( $nmon_current_line_array[1] !~ "^T[0-9]+" and $nmon_current_line_array[1] !~ "^[0-9]+" ) {
+      print_to_log( $fh_handle, $debug, "line> $nmon_line" );
+      my @hash;
+      chomp $nmon_line;
+      # split nmon lines in a table, each field (separated with ',') is a key.
+      my @keys_index = split ",", $nmon_line;
+      # first two field are identifier (AAA,BBB,ZZZZ) and a small description, do not need.
+      # ex : NETPACKET,Network Packets blueclient2,en0-reads/s,lo0-reads/s,en0-writes/s,lo0-writes/s
+      # ex : fill $hash[1] with en0-reads/s $hash[2] with lo0-reads/s and so on.
+      for ( my $sub_counter = 2 ; $sub_counter <= $#keys_index ; $sub_counter++ ) {
+        my $sub_key = $keys_index[$sub_counter];
+        push @hash, $sub_key;
+      }
+      # fill hash with table :
+      # ex : $hash_of_hashes{LPAR} = [ 'PhysicalCPU','virtualCPUs',... ]
+      $hash_of_hashes{$nmon_current_line_array[0]} = \@hash;
+	  print_to_log( $fh_handle, $debug, "keys_hash> hash_of_hashes[$nmon_current_line_array[0]] = @hash\n");
+    }
+  }
+  
+  # case 3 : timestamp, a line begining with ZZZZ.
+  # ZZZZ,T0001,00:00:44,12-SEP-2012
+  elsif ( $nmon_current_line_array[0] eq $ZZZZ ) {
+    # print a message at first value ever checked.
+    if ( $first_zzzz == 1 ) {
+      # removing all \n from information hash.
+      foreach my $key (keys %global_informations) {
+        chomp $global_informations{$key};
+      }
+      my @cpus_line = split " ", $global_informations{cpus};
+      $num_cpus     = $cpus_line[1];
+      $host_name    = $global_informations{host};
+	  
+	  print_to_log( $fh_handle, 0, localtime()." | Extracting nmon statistics for $global_informations{host}\n" );
+	  print_to_log( $fh_handle, 0, localtime()." | System ($global_informations{build} $global_informations{aix} $global_informations{tl}\n" );
+	  print_to_log( $fh_handle, 0, localtime()." | CPUs : $num_cpus\n" );
+	  print_to_log( $fh_handle, 0, localtime()." | PID : [$$]\n" );
+	  
+      $first_zzzz = 0; 
+    }
+	
+    # change date into unix timestamp using timelocal, graphite use timestamp not date.
+    my $hour = $nmon_current_line_array[2];
+    my $date = $nmon_current_line_array[3];
+    chomp $date;
+    my @date_array = split "-", $date;
+    my @hour_array = split ":", $hour;
+    my %months = ( "JAN", "00", "FEB", "01", "MAR", "02", "APR", "03", "MAY", "04", "JUN", "05", "JUL", "06", "AUG", "07", "SEP", "08", "OCT", "09", "NOV", "10", "DEC", "11");
+    # was using timelocal from Time (but not on all AIX) now using POSIX::mktime.
+    $timestamp = timelocal($hour_array[2],$hour_array[1],$hour_array[0],$date_array[0],$months{$date_array[1]},$date_array[2]);
+    print_to_log( $fh_handle, 0, localtime()." | Getting timestamp $timestamp = $nmon_current_line_array[2], $nmon_current_line_array[3]\n" );
+	
+    # if hostname is null generating a random one, with pid and random integer.
+    if ($host_name eq "") {
+      $host_name="hostname-$$-rand(100000)";
+    }
+	
+	# if serial is null put this machine into undefined chassis.
+    if ($global_informations{serialnumber} eq "") {
+      $global_informations{serialnumber}="undefined";
+    }
+	
+	print_to_log( $fh_handle, $debug, "timestamp and values> $nmon_current_line_array[2]; $nmon_current_line_array[3]; $timestamp\n" );
+  }
+  
+  # case 4 : it value line.
+  # it's no time to really feed graphite.
+  elsif ( $nmon_current_line_array[0] !~ "^BBB" ) {
+    # for the web interface we need to list machines and chassis, this is done by a json call.
+	# nmon.chassis.machine.list
+	# nmon.chassis.list
+    print $socket "nmon.$global_informations{serialnumber}.list 1  $timestamp\n";
+    print $socket "nmon.$global_informations{serialnumber}.$host_name.list 1  $timestamp\n";
+	print_to_log( $fh_handle, $debug, "line_of_value_begin> $nmon_line\n" );
+    # need hash table key to find value meaning.
+    my $current_key = $nmon_current_line_array[0];
+    # first two values are not needed.
+    my $starting_counter = 2;
+    # emptying send_to_socked_string.
+    my $send_to_socket_string = "";
+
+	# emptying value if top process.
+    if ( $nmon_current_line_array[0] eq "TOP" ) {
+      $nmon_current_line_array[2]=0;
+    }
+	
+    # for each element in the array
+    foreach (@{$hash_of_hashes{$current_key}}) {
+	
+      if ( !exists $nmon_current_line_array[$starting_counter] ) {
+        $nmon_current_line_array[$starting_counter]=0;
+      }
+	  
+      chomp $nmon_current_line_array[$starting_counter];
+      # normalize key.
+      my $key = $_;
+      my $key_norm = lc $key;
+      my $current_key_norm = lc $current_key;
+      chomp $key_norm;
+      chomp $current_key_norm;
+      $current_key_norm =~ "s/\%/_per/g";
+	  
+	  # in some specials case we want to ignore some value for example in a lpar with powerpath installed we don't want to graph hdisk.
+      if ( $ignorehdisk ) {
+        if ( $key_norm =~ m/^hdisk\d+$/ ) {
+          $skip=1;
+        }
+        else {
+          $skip=0;
+        }
+      }
+	  
+	  # if the value is not skipped (cf. last #).
+      if ( $skip != 1 ) {
+	    print_to_log( $fh_handle, $debug, "c_key_norm key_norm val> current_key_norm =  [$current_key_norm] ; key_norm = [$key_norm] ; val = $nmon_current_line_array[$starting_counter]\n" );
+        # normalize key.
+        $key_norm =~ s/\ $//g;          # replace ending spaces by nothing.
+        $key_norm =~ s/^\%/per_/g;      # replace begining % by per_.
+        $key_norm =~ s/\%$/_per/g;      # replace ending % by _per.
+        $key_norm =~ s/\)$//g;          # replace ending parenthesis by nothing.
+        $key_norm =~ s/[ \)\/\(-]/_/g ; # replace closing parenthesis by _, slash by _, opening parenthesis by _, closing parenthesis by _, two underscore by _.
+        $key_norm =~ s/__/_/g;          # replace two underscore by _.
+        $key_norm =~ s/^_//g;           # replace begining underscore by nothing.
+        $key_norm =~ s/_$//g;           # replace ending underscore by nothing.
+		
+        if ( !$nmon_current_line_array[$starting_counter] ) {
+          $nmon_current_line_array[$starting_counter] = 0;
+        }
+		
+        # special case for TOP,+PID,Time,%CPU,%Usr,%Sys,Threads,Size,ResText,ResData,CharIO,%RAM,Paging,Command,WLMclass
+        if ( $nmon_current_line_array[0] eq "TOP" ) {
+		
+          if ( $starting_counter < 13 ) {
+            $send_to_socket_string = $send_to_socket_string . "nmon.$global_informations{serialnumber}.$host_name.$current_key_norm.$nmon_current_line_array[1].$nmon_current_line_array[13].$key_norm $nmon_current_line_array[$starting_counter] $timestamp\n";
+			print_to_log( $fh_handle, $debug, "TOP_s_case> $nmon_current_line_array[1].$nmon_current_line_array[13].$key_norm\n" );
+          }
+        }
+		
+		# special case for current_key begining with ^disk (disksize, diskbusy, diskxfer, ...).
+		# need to be list by the nmon2graphite web interface.
+		if ( $current_key_norm =~ m/^disk/ ) {
+		  print $socket "nmon.$global_informations{serialnumber}.$host_name.$current_key_norm.list 1 $timestamp\n";
+		  print_to_log( $fh_handle, $debug, "^disk> feeding $current_key_norm.list" );
+		}
+		
+		# it's a "standard" line
+        else {
+          $send_to_socket_string = $send_to_socket_string . "nmon.$global_informations{serialnumber}.$host_name.$current_key_norm.$key_norm $nmon_current_line_array[$starting_counter] $timestamp\n";
+	  print_to_log( $fh_handle, $debug, "standard_case> $host_name.$current_key_norm.$key_norm $nmon_current_line_array[$starting_counter]\n" );
+        }
+        $starting_counter++;
+        print $socket $send_to_socket_string;
+      }
+    }
+  }
+  
+  # case 5 : it's the last line
+  elsif ( $nmon_current_line_array[2] =~ "^ending uptime" ) {
+    print_to_log( $fh_handle, 0, "This is the end of $$\n" );
+	$socket->shutdown(1);
+    close $socket;
+    close ($fh_handle);
+    exit 0;
+  }
+}
+

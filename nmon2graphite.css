@@ -1,0 +1,158 @@
+/* all of them */
+.all_checkboxes {width:auto;}
+/* all the labels */
+.all_checkboxes label{
+    float:left; /* so every checkbox is next to the previus one */
+    display:table-cell; /* so the content width will match the longer text */
+}
+.all_checkboxes label{width:33.3%}
+/*.all_checkboxes label:nth-child(3n+3){float:none;clear:both;color:red}*/
+
+#date_value_from, #date_value_until, #time_value { 
+  background-image:url("images/clock.png");
+  background-position:right center; background-repeat:no-repeat;
+  border:1px solid #FF6600;color:#000000;font-weight:bold
+}
+
+#time_value_from, #time_value_until { 
+  background-image:url("images/calendar.png");
+  background-position:right center; background-repeat:no-repeat;
+  border:1px solid #FF6600;color:#000000;font-weight:bold;
+}
+
+#width_box {
+  border:1px solid #FF6600;color:#000000;font-weight:bold;
+}
+
+#nmon_file_field { 
+  background-image:url("images/calendar.png");
+  background-position:right center; background-repeat:no-repeat;
+  border:1px solid #FF6600;color:#000000;font-weight:bold;
+}
+
+/*#AnyTime--date_value_from, #AnyTime--date_value_until {background-color:#CCCCCC;border:1px solid #000000}
+#AnyTime--date_value_from *, #AnyTime--date_value_until * {font-weight:bold}
+#AnyTime--date_value_from .AnyTime-btn, #AnyTime--date_value_until .AnyTime-btn {background-color:#666666;
+  border:1px solid #FF6600;color:#000000}
+#AnyTime--date_value_from .AnyTime-cur-btn, #AnyTime--date_value_until .AnyTime-cur-btn {background-color:#666666;
+  border:1px solid #FF6600;color:#FF6600}
+#AnyTime--date_value_from .AnyTime-focus-btn, #AnyTime--date_value_until .AnyTime-focus-btn {border-style:dotted}
+#AnyTime--date_value_from .AnyTime-lbl, #AnyTime--date_value_until .AnyTime-lbl {color:black}
+#AnyTime--date_value_from .AnyTime-hdr, #AnyTime--date_value_until .AnyTime-hdr {background-color:#FF6600;color:black}*/
+
+label {
+	width:100px;    /*Or however much space you need for the form.s labels*/
+    	float:left;
+}
+
+#time_value {
+  margin-right:2px;
+}
+
+#time_unit {
+  margin-right:2px;
+}
+
+select {
+  border:1px solid #FF6600;
+  color:#000000;
+  font-weight:bold;
+  font-family:Arial, Helvetica, sans-serif;
+}
+
+.sep_form {
+  margin-top:2px;
+}
+
+fieldset {
+	border:1px dashed #CCC;
+	padding:10px;
+        margin-top:5px;
+}
+legend {
+	font-family:Arial, Helvetica, sans-serif;
+	font-size: 90%;
+	letter-spacing: -1px;
+	font-weight: bold;
+	line-height: 1.1;
+	color:#fff;
+	background: #666;
+	border: 1px solid #333;
+	padding: 2px 6px;
+}
+
+#nmon2graphite_form {
+  	width:40%;
+	padding-top:10px;
+	float:left;
+	font-family:Arial, Helvetica, sans-serif;
+}
+
+#all_graphs {
+	background-color:#fff;
+	width:59%;
+	padding:5px;
+	margin-top:5px;
+	float:right;
+	color:#666666
+}
+
+.checkboxes {
+  font-size:60%;
+}
+
+#top_title {
+	width:230px;
+	height:50px;
+}
+
+h1 {
+        background-image:url("images/graph.png");
+	background-position:right center; background-repeat:no-repeat;
+	font-family:Arial, Helvetica, sans-serif;
+	font-size: 175%;
+	letter-spacing: -1px;
+	font-weight: normal;
+	line-height: 1.1;
+	color:#333;
+}
+
+img {
+  border-style: none;
+}
+.form {
+	margin:0;
+	padding:0;
+}
+
+#full_container {
+	width:95%;
+}
+
+.clear {
+	clear:both;
+}
+
+#progressbox {
+    border: 1px solid #0099CC;
+    padding: 1px;
+    position:relative;
+    width:400px;
+    border-radius: 3px;
+    margin: 10px;
+    display:none;
+    text-align:left;
+}
+#progressbar {
+    height:20px;
+    border-radius: 3px;
+    background-color: #003333;
+    width:1%;
+}
+#statustxt {
+    top:3px;
+    left:50%;
+    position:absolute;
+    display:inline-block;
+    color: #000000;
+}
