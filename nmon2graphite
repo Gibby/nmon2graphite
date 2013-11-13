@@ -1,4 +1,4 @@
-#!/usr/bin/perl
+/!/usr/bin/perl
 # Program name: nmon2graphite cgi perl script.
 # Purpose: perl script to feed graphite backend with nmon output.
 # Author: Benoit C chmod666.org.
@@ -9,6 +9,8 @@
 # This work is licensed under the Creative Commons Attribution-ShareAlike 3.0 Unported License.
 # To view a copy of this license, visit http://creativecommons.org/licenses/by-sa/3.0/ or send
 # a letter to Creative Commons, 444 Castro Street, Suite 900, Mountain View, California, 94041, USA.
+
+# 2013/11/13 Modification for hdisk bug founded by user
 
 use strict;
 use warnings;
@@ -44,7 +46,7 @@ EOF
   exit 1;
 }
 
-my $graphite_box_ip    = '10.10.10.10';
+my $graphite_box_ip    = '192.168.0.18';
 my $graphite_box_port  = '2003';
 my $graphite_box_proto = 'tcp';
 my $log_file           = '/tmp/nmon2graphite.log';
@@ -256,7 +258,9 @@ while ( my $nmon_line = <STDIN> ) {
 		# need to be list by the nmon2graphite web interface.
 		if ( $current_key_norm =~ m/^disk/ ) {
 		  print $socket "nmon.$global_informations{serialnumber}.$host_name.$current_key_norm.list 1 $timestamp\n";
-		  print_to_log( $fh_handle, $debug, "^disk> feeding $current_key_norm.list" );
+		  print_to_log( $fh_handle, $debug, "^disk> feeding $current_key_norm.list\n" );
+                  $send_to_socket_string = $send_to_socket_string . "nmon.$global_informations{serialnumber}.$host_name.$current_key_norm.$key_norm $nmon_current_line_array[$starting_counter] $timestamp\n";
+	          print_to_log( $fh_handle, $debug, "standard_case> $host_name.$current_key_norm.$key_norm $nmon_current_line_array[$starting_counter]\n" );
 		}
 		
 		# it's a "standard" line
