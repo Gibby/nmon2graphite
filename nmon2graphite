@@ -1,4 +1,4 @@
-/!/usr/bin/perl
+#!/usr/bin/perl
 # Program name: nmon2graphite cgi perl script.
 # Purpose: perl script to feed graphite backend with nmon output.
 # Author: Benoit C chmod666.org.
